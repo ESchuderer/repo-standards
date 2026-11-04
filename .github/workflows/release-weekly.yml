@@ -1,7 +1,7 @@
 name: Release weekly
 
 # Reusable: merges the open release-please pull request, so a release goes out every Monday without anyone clicking.
-# The caller (callers/release-weekly.yml) holds the schedule and `workflow_dispatch`, which releases on any other day.
+# The caller (templates/release-weekly.yml) holds the schedule and `workflow_dispatch`, which releases on any other day.
 # The pull request is merged with auto-merge: it waits for the required checks (and the merge queue, where the
 # repository has one). A pull request with the label `hold` is left alone, and no open release pull request is not an
 # error: the job ends.

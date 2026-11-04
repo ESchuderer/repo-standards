@@ -1,0 +1,40 @@
+name: Pin auto-merge
+
+# Reusable: on a Dependabot pull request that changes only the pins of ESchuderer/reusable-workflows, turn on
+# auto-merge (squash); the ruleset then merges it once the required `check` is green. Any other change stays for the
+# owner. The caller runs it on `pull_request` and grants `contents: write` and `pull-requests: write` to this job only.
+# Only for a repository whose ruleset requires `check`: without a pending required check GitHub refuses auto-merge,
+# this job fails and the pull request waits for the owner.
+# Accepted risk: a compromised release of reusable-workflows reaches every caller after the Dependabot cooldown.
+on:
+  workflow_call:
+
+permissions: {}
+
+jobs:
+  auto-merge:
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+      - name: Enable auto-merge for pin updates only
+        env:
+          DEPENDENCY_NAMES: ${{ steps.metadata.outputs.dependency-names }}
+          PR_ID: ${{ github.event.pull_request.node_id }}
+          # Not `gh pr merge --auto`: it merges at once when no required check is pending (cli/cli#8792).
+          MUTATION: >-
+            mutation($id: ID!) { enablePullRequestAutoMerge(input: {pullRequestId: $id, mergeMethod: SQUASH}) {
+            clientMutationId } }
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          names=$(printf '%s' "$DEPENDENCY_NAMES" | tr ',' '\n' | sed 's/^ *//; s/ *$//' | grep . || true)
+          if [ -z "$names" ]; then echo "No dependency names found; left for the owner."; exit 0; fi
+          others=$(printf '%s\n' "$names" | grep -vxE 'ESchuderer/reusable-workflows(/.*)?' || true)
+          if [ -n "$others" ]; then echo "Also updates $others; left for the owner."; exit 0; fi
+          gh api graphql -f id="$PR_ID" -f query="$MUTATION"

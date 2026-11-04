@@ -1,0 +1,13 @@
+name: Pin auto-merge
+
+# Copy to .github/workflows/pin-auto-merge.yml. On a Dependabot pull request that changes only the pins of
+# ESchuderer/reusable-workflows it turns on auto-merge; the ruleset merges once `check` is green. Needs the
+# repository setting "Allow auto-merge" and the Dependabot group `reusable-workflows` (templates/dependabot.yml).
+# Copy it only once the ruleset requires `check`; before that GitHub refuses auto-merge and the job fails.
+on:
+  pull_request:
+permissions: {}
+jobs:
+  pin-auto-merge:
+    permissions: { contents: write, pull-requests: write }
+    uses: ESchuderer/reusable-workflows/.github/workflows/pin-auto-merge.yml@<release-sha> # <version>
