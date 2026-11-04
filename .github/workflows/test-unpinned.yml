@@ -1,0 +1,11 @@
+name: Test unpinned
+on:
+  workflow_dispatch:
+permissions: {}
+jobs:
+  weekly:
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: write
+    uses: ESchuderer/repo-standards/.github/workflows/release-weekly.yml@v0.1.1
