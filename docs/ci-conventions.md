@@ -58,7 +58,7 @@ The rules a repository follows when it calls the workflows of `ESchuderer/reusab
 | `typos-config` | empty | path to a typos config; empty lets typos find `_typos.toml` |
 | `check-links` | `true` | offline check of links between local Markdown files |
 
-Dependency review and GitHub Actions: GitHub Actions dependencies carry no license data that dependency review reads, so an action bump passes the allow-list without an exception (see the evidence in the pull request that introduced `gates.yml`).
+Dependency review and GitHub Actions: dependency review lists an action version change but finds no license data for it, so an action bump passes the default allow-list without an `allow-dependencies-licenses` exception (observed 2026-11-04 with dependency-review-action v5.0.0).
 
 `codeql.yml`:
 
