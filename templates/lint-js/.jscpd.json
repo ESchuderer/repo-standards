@@ -1,8 +1,0 @@
-{
-  "minTokens": 100,
-  "format": ["javascript", "typescript", "jsx", "tsx"],
-  "gitignore": true,
-  "ignore": ["**/node_modules/**", "**/dist/**", "**/build/**", "**/coverage/**", "**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**"],
-  "reporters": ["console"],
-  "path": ["."]
-}

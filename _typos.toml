@@ -1,0 +1,6 @@
+# US spelling everywhere, identifiers and prose.
+[default]
+locale = "en-us"
+
+[default.extend-words]
+alls = "alls" # re-actors/alls-green

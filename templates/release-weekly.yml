@@ -1,0 +1,18 @@
+name: Release weekly
+
+# Copy to .github/workflows/release-weekly.yml. Merges the open release pull request every Monday; needs the release
+# App (variable RELEASE_APP_CLIENT_ID, secret RELEASE_APP_PRIVATE_KEY). A repository may drop the schedule.
+on:
+  schedule:
+    - cron: '0 14 * * 1' # Monday 14:00
+      timezone: Europe/Berlin
+  workflow_dispatch:
+permissions: {}
+jobs:
+  weekly:
+    permissions: { contents: read, pull-requests: write, actions: write }
+    uses: ESchuderer/reusable-workflows/.github/workflows/release-weekly.yml@<release-sha> # <version>
+    with:
+      app-client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+    secrets:
+      app-private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}

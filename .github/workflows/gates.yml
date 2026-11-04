@@ -1,0 +1,109 @@
+name: Gates
+
+# Reusable: the pull-request gates every repository runs. The caller grants `contents: read` and `pull-requests: read`
+# (a called workflow can only lower them) and lists this job in `needs` of its required `check`.
+# Steps that need a pull request skip on `push` and `merge_group`; their job still reports success there.
+on:
+  workflow_call:
+    inputs:
+      license-allow-list:
+        type: string
+        default: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD, CC0-1.0, Unlicense, MPL-2.0, LGPL-2.1-or-later, LGPL-3.0-or-later
+        description: SPDX ids a new dependency may carry. Add GPL or AGPL only on purpose.
+      fail-on-severity:
+        type: string
+        default: high
+        description: Lowest vulnerability severity that fails dependency review.
+      pr-title-types:
+        type: string
+        default: |
+          feat
+          fix
+          perf
+          refactor
+          docs
+          test
+          build
+          ci
+          chore
+          revert
+          style
+        description: Conventional Commits types a pull request title may use, one per line.
+      typos-config:
+        type: string
+        default: ''
+        description: Path to a typos config file; empty uses the file typos finds itself (_typos.toml and others).
+      check-links:
+        type: boolean
+        default: true
+        description: Check links between local files with lychee, offline.
+
+permissions: {}
+
+jobs:
+  workflows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo" -w /repo docker.io/rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
+      # zizmor asks for 7 days of Dependabot cooldown; the owner's rule is 3. A repository with its own
+      # zizmor config keeps it and sets the 3 days there.
+      - name: zizmor config
+        run: |
+          for f in .github/zizmor.yml .github/zizmor.yaml zizmor.yml zizmor.yaml; do [ -e "$f" ] && exit 0; done
+          printf 'rules:\n  dependabot-cooldown:\n    config:\n      days: 3\n' > .github/zizmor.yml
+      - uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
+        with:
+          version: 1.32.0
+          advanced-security: false
+
+  text:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: crate-ci/typos@4c8b7f51ca60df14e3c5ca82770dfbbe6c3dae85 # v1.52.0
+        with:
+          config: ${{ inputs.typos-config }}
+      - if: ${{ inputs.check-links }}
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: --offline --no-progress './**/*.md'
+          failIfEmpty: false
+          jobSummary: false
+
+  dependency-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: ${{ inputs.fail-on-severity }}
+          fail-on-scopes: runtime, development, unknown
+          allow-licenses: ${{ inputs.license-allow-list }}
+
+  pr-title:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+    steps:
+      - if: ${{ github.event_name == 'pull_request' }}
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          types: ${{ inputs.pr-title-types }}

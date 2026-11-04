@@ -1,0 +1,51 @@
+name: CodeQL
+
+# Reusable: CodeQL advanced setup. Switch default setup off in a repository that calls this, or the two collide.
+# The caller grants `security-events: write`, `contents: read` and `actions: read`. The ruleset enforces the result
+# (`required_code_scanning`), so this job stays out of `needs` of the caller's `check`.
+# One build mode per call: a repository with a manual C or C++ build calls this twice, once per mode.
+on:
+  workflow_call:
+    inputs:
+      languages:
+        type: string
+        default: '["actions"]'
+        description: CodeQL languages as a JSON list, for example '["actions", "javascript-typescript"]'.
+      build-mode:
+        type: string
+        default: none
+        description: none, autobuild or manual; manual runs build-command.
+      build-command:
+        type: string
+        default: ''
+        description: Shell command that builds the code when build-mode is manual.
+
+permissions: {}
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{ fromJSON(inputs.languages) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ inputs.build-mode }}
+      - if: ${{ inputs.build-mode == 'manual' }}
+        env:
+          BUILD_COMMAND: ${{ inputs.build-command }}
+        run: bash -euo pipefail -c "$BUILD_COMMAND"
+      - uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
+        with:
+          category: /language:${{ matrix.language }}

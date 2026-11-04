@@ -1,0 +1,28 @@
+# Copy to .github/dependabot.yml and keep the entries of the ecosystems the repository uses.
+# Pins of ESchuderer/reusable-workflows get their own group, so pin-auto-merge.yml merges them alone.
+# A 3-day cooldown lets a broken or malicious release be pulled first.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    cooldown: { default-days: 3 }
+    groups:
+      reusable-workflows: { patterns: ['ESchuderer/reusable-workflows*'] }
+      actions: { patterns: ['*'] }
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly }
+    cooldown: { default-days: 3 }
+    groups:
+      npm: { update-types: [minor, patch] }
+  - package-ecosystem: pip
+    directory: /
+    schedule: { interval: weekly }
+    cooldown: { default-days: 3 }
+    groups:
+      pip: { update-types: [minor, patch] }
+  - package-ecosystem: docker
+    directory: /.devcontainer
+    schedule: { interval: weekly }
+    cooldown: { default-days: 3 }
