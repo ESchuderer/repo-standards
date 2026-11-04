@@ -2,7 +2,7 @@ name: Gates
 
 # Reusable: the pull-request gates every repository runs. The caller grants `contents: read` and `pull-requests: read`
 # (a called workflow can only lower them) and lists this job in `needs` of its required `check`.
-# Steps that need a pull request skip on `push` and `merge_group`; their job still reports success there.
+# Steps that need a pull request skip on `push`, `merge_group` and `schedule`; their job still reports success there.
 on:
   workflow_call:
     inputs:
@@ -37,6 +37,10 @@ on:
         type: boolean
         default: true
         description: Check links between local files with lychee, offline.
+      dependency-review:
+        type: boolean
+        default: true
+        description: Run dependency review. A private repository without GitHub Code Security passes false.
 
 permissions: {}
 
@@ -83,6 +87,7 @@ jobs:
           jobSummary: false
 
   dependency-review:
+    if: ${{ inputs.dependency-review }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

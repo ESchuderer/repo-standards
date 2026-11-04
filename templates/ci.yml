@@ -2,13 +2,17 @@ name: CI
 
 # Copy to .github/workflows/ci.yml, set <release-sha> # <version> to the latest release, set the CodeQL languages
 # the repository has, add the product jobs to `needs` of `check` and name area jobs that may skip in
-# `allowed-skips` (docs/ci-conventions.md).
+# `allowed-skips` (docs/ci-conventions.md). A private repository passes `dependency-review: false` to `gates` and drops
+# the `codeql` job (docs/ci-conventions.md, Private repositories).
 on:
   push:
     branches: [main]
   pull_request:
     types: [opened, edited, reopened, synchronize]
   merge_group:
+  schedule:
+    - cron: '37 5 * * 1' # Monday 05:37, CodeQL and zizmor on unchanged code
+      timezone: Europe/Berlin
 permissions: {}
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

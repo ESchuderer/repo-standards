@@ -26,7 +26,8 @@ The rules a repository follows when it calls the workflows of `ESchuderer/reusab
 
 ## Events, permissions, timeouts, concurrency
 
-- `ci.yml` triggers on `push` to `main`, `pull_request` with types `opened, edited, reopened, synchronize`, and `merge_group`. `edited` reruns the title check after a title change. Steps that need a pull request skip on the other events and their job still reports.
+- `ci.yml` triggers on `push` to `main`, `pull_request` with types `opened, edited, reopened, synchronize`, `merge_group`, and weekly on `schedule` (`cron: '37 5 * * 1'`, `timezone: Europe/Berlin`). `edited` reruns the title check after a title change. Steps that need a pull request skip on the other events and their job still reports.
+- The weekly run lets CodeQL apply new queries and zizmor's online audits report new advisories for pinned actions on code that did not change. GitHub turns a schedule off in a public repository after 60 days without activity (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
 - Every workflow starts with `permissions: {}` and grants per job what that job needs. A called workflow can only lower the permissions its caller grants, so the caller grants the union the called jobs need (the table in the README).
 - Every job sets `timeout-minutes` (gates 5, CodeQL 30, weekly release 120).
 - Pull request runs cancel superseded runs; runs on `main` never cancel: `cancel-in-progress: ${{ github.event_name == 'pull_request' }}`.
@@ -41,9 +42,10 @@ The rules a repository follows when it calls the workflows of `ESchuderer/reusab
 - Releases of this repository are immutable; a published tag cannot move.
 - Dependabot keeps pins current with a cooldown of 3 days in every ecosystem (`templates/dependabot.yml`). The pins of `ESchuderer/reusable-workflows` have their own group, so they arrive as their own pull request.
 - `pin-auto-merge.yml` turns on auto-merge for that pull request when it changes nothing but those pins; the ruleset merges it once `check` is green. A pull request that also changes any other dependency waits for the owner.
+- `pin-auto-merge.yml` goes only into a repository whose ruleset requires `check`. It calls the GraphQL mutation `enablePullRequestAutoMerge`, not `gh pr merge --auto`, which merges at once when no required check is pending (cli/cli#8792). Without a pending required check GitHub refuses the mutation (`Pull request is in unstable status` or `clean status`), the job fails and nothing merges (observed 2026-11-04 in #26 and #27).
 - Accepted risk: a compromised release of `ESchuderer/reusable-workflows` reaches every caller without a review, after the 3-day cooldown. Immutable releases, SHA pins, zizmor and the rule that only the owner changes workflow files limit it.
 - zizmor's `dependabot-cooldown` audit asks for 7 days. `gates.yml` writes a zizmor config with 3 days when the repository has none; a repository with its own `zizmor.yml` sets `rules.dependabot-cooldown.config.days: 3` there.
-- Auto-merge turned on with `GITHUB_TOKEN` merges as `github-actions[bot]`, and GitHub starts no workflow for events caused by that token, so the pin merge itself runs no push workflow on `main`; the next push runs CI and release-please over it (expected from GitHub's documentation, not yet observed).
+- Auto-merge turned on with `GITHUB_TOKEN` merges as `github-actions[bot]`, and GitHub starts no workflow for events caused by that token, so the pin merge itself runs no push workflow on `main`; the next push runs CI and release-please over it, and the weekly run runs CI (expected from GitHub's documentation, not yet observed).
 - Manual bumps, which Dependabot does not see: the actionlint image digest (in `gates.yml` and in the `templates` job of `ci.yml`) and the zizmor version (in `gates.yml`).
 
 ## Inputs
@@ -57,6 +59,7 @@ The rules a repository follows when it calls the workflows of `ESchuderer/reusab
 | `pr-title-types` | `feat fix perf refactor docs test build ci chore revert style`, one per line | Conventional Commits types a title may use |
 | `typos-config` | empty | path to a typos config; empty lets typos find `_typos.toml` |
 | `check-links` | `true` | offline check of links between local Markdown files |
+| `dependency-review` | `true` | dependency review on pull requests; `false` only in a private repository without GitHub Code Security (section Private repositories) |
 
 Dependency review and GitHub Actions: dependency review lists an action version change but finds no license data for it, so an action bump passes the default allow-list without an `allow-dependencies-licenses` exception (observed 2026-11-04 with dependency-review-action v5.0.0).
 
@@ -78,7 +81,7 @@ A repository with compiled code calls `codeql.yml` twice: once with `build-mode:
 
 An owner or repository with the Actions policy `selected` and SHA pinning required allows GitHub-owned actions and names:
 
-- `ESchuderer/reusable-workflows/.github/workflows/*@*` (one entry for every shared workflow; whether the wildcard matches a workflow path is not yet tested)
+- `ESchuderer/reusable-workflows/.github/workflows/*@*` (one entry for every shared workflow; whether the wildcard matches a workflow path is not yet tested). Needed only by owners other than ESchuderer: a repository of the ESchuderer account with the `selected` policy already allows workflows of its own owner (run 41813931310).
 - the third-party actions used inside the shared workflows: `zizmorcore/zizmor-action@*`, `crate-ci/typos@*`, `lycheeverse/lychee-action@*`, `amannn/action-semantic-pull-request@*`, `dependabot/fetch-metadata@*`
 - the third-party actions of the templates the repository uses: `re-actors/alls-green@*`, `googleapis/release-please-action@*`, `ossf/scorecard-action@*`, and `dorny/paths-filter@*` where an area filter runs
 
@@ -89,13 +92,18 @@ An owner or repository with the Actions policy `selected` and SHA pinning requir
    - private vulnerability reporting on: `gh api -X PUT repos/<owner>/<repo>/private-vulnerability-reporting`, check with `gh api repos/<owner>/<repo>/private-vulnerability-reporting`
    - immutable releases on: `gh api -X PUT repos/<owner>/<repo>/immutable-releases`, check with `gh api repos/<owner>/<repo>/immutable-releases`
    - CodeQL default setup off: `gh api -X PATCH repos/<owner>/<repo>/code-scanning/default-setup -f state=not-configured`, check with `gh api repos/<owner>/<repo>/code-scanning/default-setup --jq .state`
-3. Copy the templates and set the release SHA (section Pins and versions). Add `_typos.toml` with `[default] locale = "en-us"` for US spelling.
+3. Copy the templates, except `pin-auto-merge.yml`, and set the release SHA (section Pins and versions). Add `_typos.toml` with `[default] locale = "en-us"` for US spelling.
 4. A repository that releases: set the variable `RELEASE_APP_CLIENT_ID` and the secret `RELEASE_APP_PRIVATE_KEY` of its owner's release GitHub App, and add `release-please-config.json` and `.release-please-manifest.json`.
-5. Open the first pull request. Once `check` has reported, the ruleset that requires it is applied (step 1 again if it was held back).
+5. Open the first pull request. Once `check` has reported, the ruleset that requires it is applied (step 1 again if it was held back). Then copy `pin-auto-merge.yml`.
 
 ## Private repositories
 
-Private repositories are set by hand from the same checklist and are never named in `ESchuderer/iac`. On GitHub Free a private repository has no rulesets, so CI reports and cannot block a merge, and CodeQL, dependency review and secret scanning do not run. Each private repository writes this deviation down with its substitute gates:
+Private repositories are set by hand from the same checklist and are never named in `ESchuderer/iac`. On GitHub Free a private repository has no rulesets, so CI reports and cannot block a merge, and CodeQL, dependency review and secret scanning do not run. A private repository differs from the templates in two places:
+
+- `ci.yml` calls `gates.yml` with `dependency-review: false` and has no `codeql` job: without GitHub Code Security, dependency review fails its job and the CodeQL upload fails, so `check` would stay red.
+- No `pin-auto-merge.yml`: without a ruleset there is no required check for auto-merge to wait for.
+
+Each private repository writes this deviation down with its substitute gates:
 
 | Gate | Substitute |
 |---|---|

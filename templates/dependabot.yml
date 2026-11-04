@@ -1,12 +1,14 @@
 # Copy to .github/dependabot.yml and keep the entries of the ecosystems the repository uses.
 # Pins of ESchuderer/reusable-workflows get their own group, so pin-auto-merge.yml merges them alone.
-# A 3-day cooldown lets a broken or malicious release be pulled first.
+# A 3-day cooldown lets a broken or malicious release be pulled first. The fixed commit prefix gives action pins a
+# title the pr-title gate accepts without Dependabot guessing the style from history.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
     cooldown: { default-days: 3 }
+    commit-message: { prefix: chore, include: scope }
     groups:
       reusable-workflows: { patterns: ['ESchuderer/reusable-workflows*'] }
       actions: { patterns: ['*'] }
