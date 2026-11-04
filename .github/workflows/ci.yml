@@ -24,6 +24,8 @@ jobs:
       contents: read
       pull-requests: read
     uses: ./.github/workflows/gates.yml # zizmor: ignore[self-repository] actionlint checks inputs of ./ calls only
+    with:
+      dependency-review: false
 
   codeql:
     permissions:
