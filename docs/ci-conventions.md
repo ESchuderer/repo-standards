@@ -43,7 +43,8 @@ The rules a repository follows when it calls the workflows of `ESchuderer/reusab
 - `pin-auto-merge.yml` turns on auto-merge for that pull request when it changes nothing but those pins; the ruleset merges it once `check` is green. A pull request that also changes any other dependency waits for the owner.
 - Accepted risk: a compromised release of `ESchuderer/reusable-workflows` reaches every caller without a review, after the 3-day cooldown. Immutable releases, SHA pins, zizmor and the rule that only the owner changes workflow files limit it.
 - zizmor's `dependabot-cooldown` audit asks for 7 days. `gates.yml` writes a zizmor config with 3 days when the repository has none; a repository with its own `zizmor.yml` sets `rules.dependabot-cooldown.config.days: 3` there.
-- Manual bumps, which Dependabot does not see: the actionlint image digest and the zizmor version in `gates.yml` and `ci.yml`.
+- Auto-merge turned on with `GITHUB_TOKEN` merges as `github-actions[bot]`, and GitHub starts no workflow for events caused by that token, so the pin merge itself runs no push workflow on `main`; the next push runs CI and release-please over it (expected from GitHub's documentation, not yet observed).
+- Manual bumps, which Dependabot does not see: the actionlint image digest (in `gates.yml` and in the `templates` job of `ci.yml`) and the zizmor version (in `gates.yml`).
 
 ## Inputs
 

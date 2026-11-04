@@ -1,7 +1,8 @@
 name: CI
 
-# Copy to .github/workflows/ci.yml, set <release-sha> # <version> to the latest release, add the product jobs to
-# `needs` of `check`, and name area jobs that may skip in `allowed-skips` (docs/ci-conventions.md).
+# Copy to .github/workflows/ci.yml, set <release-sha> # <version> to the latest release, set the CodeQL languages
+# the repository has, add the product jobs to `needs` of `check` and name area jobs that may skip in
+# `allowed-skips` (docs/ci-conventions.md).
 on:
   push:
     branches: [main]
@@ -10,7 +11,7 @@ on:
   merge_group:
 permissions: {}
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   gates:
