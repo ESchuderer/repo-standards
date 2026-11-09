@@ -58,7 +58,6 @@ The rules a repository follows when it calls the workflows of `ESchuderer/reusab
 | `fail-on-severity` | `high` | lowest vulnerability severity that fails dependency review |
 | `pr-title-types` | `feat fix perf refactor docs test build ci chore revert style`, one per line | Conventional Commits types a title may use |
 | `typos-config` | empty | path to a typos config; empty lets typos find `_typos.toml` |
-| `check-links` | `true` | offline check of links between local Markdown files |
 | `dependency-review` | `true` | dependency review on pull requests; `false` only in a private repository without GitHub Code Security (section Private repositories) |
 
 Dependency review and GitHub Actions: dependency review lists an action version change but finds no license data for it, so an action bump passes the default allow-list without an `allow-dependencies-licenses` exception (observed 2026-11-04 with dependency-review-action v5.0.0).
@@ -82,7 +81,7 @@ A repository with compiled code calls `codeql.yml` twice: once with `build-mode:
 An owner or repository with the Actions policy `selected` and SHA pinning required allows GitHub-owned actions and names:
 
 - `ESchuderer/reusable-workflows/.github/workflows/*@*` (one entry for every shared workflow; whether the wildcard matches a workflow path is not yet tested). Needed only by owners other than ESchuderer: a repository of the ESchuderer account with the `selected` policy already allows workflows of its own owner (run 41813931310).
-- the third-party actions used inside the shared workflows: `zizmorcore/zizmor-action@*`, `crate-ci/typos@*`, `lycheeverse/lychee-action@*`, `amannn/action-semantic-pull-request@*`, `dependabot/fetch-metadata@*`
+- the third-party actions used inside the shared workflows: `zizmorcore/zizmor-action@*`, `crate-ci/typos@*`, `amannn/action-semantic-pull-request@*`, `dependabot/fetch-metadata@*`
 - the third-party actions of the templates the repository uses: `re-actors/alls-green@*`, `googleapis/release-please-action@*`, `ossf/scorecard-action@*`, and `dorny/paths-filter@*` where an area filter runs
 
 ## Checklist for a new public repository
@@ -113,7 +112,7 @@ Each private repository writes this deviation down with its substitute gates:
 | CodeQL for PHP (not analyzed by CodeQL) | `php -l` and PHPStan |
 | Dependency review | Dependabot version updates and alerts, hash-pinned lockfiles |
 | Secret scanning | gitleaks over the full history |
-| Text | typos and lychee offline |
+| Text | typos |
 
 ## What agents must not change
 
