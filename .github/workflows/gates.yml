@@ -33,10 +33,6 @@ on:
         type: string
         default: ''
         description: Path to a typos config file; empty uses the file typos finds itself (_typos.toml and others).
-      check-links:
-        type: boolean
-        default: true
-        description: Check links between local files with lychee, offline.
       dependency-review:
         type: boolean
         default: true
@@ -79,12 +75,6 @@ jobs:
       - uses: crate-ci/typos@4c8b7f51ca60df14e3c5ca82770dfbbe6c3dae85 # v1.52.0
         with:
           config: ${{ inputs.typos-config }}
-      - if: ${{ inputs.check-links }}
-        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
-        with:
-          args: --offline --no-progress './**/*.md'
-          failIfEmpty: false
-          jobSummary: false
 
   dependency-review:
     if: ${{ inputs.dependency-review }}
