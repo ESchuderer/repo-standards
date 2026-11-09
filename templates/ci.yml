@@ -21,8 +21,6 @@ jobs:
   gates:
     permissions: { contents: read, pull-requests: read }
     uses: ESchuderer/reusable-workflows/.github/workflows/gates.yml@<release-sha> # <version>
-    with:
-      check-links: true
   codeql:
     permissions: { security-events: write, contents: read, actions: read }
     uses: ESchuderer/reusable-workflows/.github/workflows/codeql.yml@<release-sha> # <version>
